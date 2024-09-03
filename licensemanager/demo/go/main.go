@@ -28,7 +28,8 @@ func init() {
 }
 
 var knownTemplates = map[string]string{
-	"template-1": "sku-1",
+	"template-1": "Basic Subscription",
+	"template-2": "Advanced Subscription",
 }
 
 // run is the function that writes product usage to Yandex.Cloud API.
@@ -127,13 +128,17 @@ func run(
 	}
 
 	var lock *licensemanager.Lock
-	// Step 2. Find the l
+	// Step 2. Find the lock for known template
 	for _, l := range response.Locks {
 		// if l template is known
 		if sku, ok := knownTemplates[l.TemplateId]; ok {
 			log.Printf("Lock found: %v, it corresponds to SKU: %v", l.Id, sku)
 			lock = l
 		}
+	}
+
+	if lock == nil {
+		log.Fatalf("could not find lock for known template")
 	}
 
 	// Step 3. Ensure l while program is running

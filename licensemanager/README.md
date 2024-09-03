@@ -51,5 +51,8 @@ yc iam key create --service-account-id $SA_ID --output key.json --description "K
 Для запуска примера выполните следующую команду:
 
 ```bash
-go run ./demo/go/main.go --product-id product --sku-id sku --quantity 1 --fake --service-account-key ./key.json
+(
+  cd ./demo/go
+  go run main.go --service-account-key ./key.json --resource-id resource-1 --folder-id folder --fake
+)
 ```

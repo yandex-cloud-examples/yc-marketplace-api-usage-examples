@@ -44,10 +44,17 @@ func newLmServer(c config.Config) *lmServer {
 	}
 }
 
-func (s *lmServer) List(context.Context, *licensemanager.ListLocksRequest) (*licensemanager.ListLocksResponse, error) {
+func (s *lmServer) List(ctx context.Context, req *licensemanager.ListLocksRequest) (*licensemanager.ListLocksResponse, error) {
+	var res []*licensemanager.Lock
+
+	for _, l := range s.locks {
+		if req.ResourceId == l.ResourceId {
+			res = append(res, l)
+		}
+	}
 
 	return &licensemanager.ListLocksResponse{
-		Locks: s.locks,
+		Locks: res,
 	}, nil
 }
 
