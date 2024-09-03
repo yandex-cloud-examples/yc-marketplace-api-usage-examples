@@ -150,9 +150,6 @@ func run(productID string, skuID string, quantity int, timestamp string, uuidStr
 		// If no service account key provided, use instance service account will be used.
 		// But it would work only on Yandex.Cloud VMs.
 		creds = ycsdk.InstanceServiceAccount()
-		if err != nil {
-			log.Fatalf("Unable to create sdk credentials: %v", err)
-		}
 	}
 
 	ctx := context.Background()

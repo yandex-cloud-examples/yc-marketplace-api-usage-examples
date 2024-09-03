@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  metering:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PORT: 8080
+      LOCKS: '[{"template_id": "template-1", "resource_id": "resource-1"}]'
+    ports:
+      - 8080:8080
