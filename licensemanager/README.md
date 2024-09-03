@@ -34,11 +34,11 @@ docker-compose up --build
 Для того чтобы подготовить окружение для запуска примера, выполните следующие команды:
 
 ```bash
-yc iam service-account create --name metering
-SA_ID=$(yc iam service-account get --name metering --format json | jq -r .id)
+yc iam service-account create --name lm
+SA_ID=$(yc iam service-account get --name lm --format json | jq -r .id)
 FOLDER_ID=$(yc config get folder-id)
-yc resource-manager folder add-access-binding --role marketplace.meteringAgent --subject serviceAccount:$SA_ID --id $FOLDER_ID
-yc iam key create --service-account-id $SA_ID --output key.json --description "Key for metering service account"
+yc resource-manager folder add-access-binding --role license-manager.user --subject serviceAccount:$SA_ID --id $FOLDER_ID
+yc iam key create --service-account-id $SA_ID --output key.json --description "Key for lm service account"
 ```
 
 Несмотря на то, что фейковый сервер не проверяет подлинность ключа и не выпускает токен, ключ все равно понадобится,
