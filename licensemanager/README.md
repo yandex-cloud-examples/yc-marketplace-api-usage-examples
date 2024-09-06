@@ -56,3 +56,15 @@ yc iam key create --service-account-id $SA_ID --output key.json --description "K
   go run main.go --service-account-key ./key.json --resource-id resource-1 --folder-id folder --fake
 )
 ```
+
+[Подробнее](./demo/go/README.md)
+
+## Запуск примера на Python
+
+Для запуска примера выполните следующую команду:
+
+```bash
+python ./demo/python/main.py --service-account-key ./key.json --resource-id resource-1 --folder-id folder --fake
+```
+
+[Подробнее](./demo/python/README.md)

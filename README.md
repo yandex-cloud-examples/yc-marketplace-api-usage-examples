@@ -2,3 +2,4 @@
 
 ## Примеры
 - [Работа с  Metering API](metering/README.md)
+- [Работа с  License Manager API](licensemanager/README.md)

@@ -39,8 +39,14 @@ func run(
 	fake bool,
 	serviceAccountKey string,
 ) string {
+	// If resourceID and folderID are not provided, try to fetch them from metadata
 	if resourceID == "" || folderID == "" {
-		log.Fatalf("Resource ID and Folder ID must be provided")
+		p, err := fetchParamsFromMetadata()
+		if err != nil {
+			log.Fatalf("Resource ID and Folder ID must be provided")
+		}
+		resourceID = p.resourceID
+		folderID = p.folderID
 	}
 
 	// If we provide empty apiEndpoint, SDK will use default endpoint
@@ -169,6 +175,11 @@ func run(
 	}
 
 	return string(jsonResp)
+}
+
+type params struct {
+	resourceID string
+	folderID   string
 }
 
 func main() {
