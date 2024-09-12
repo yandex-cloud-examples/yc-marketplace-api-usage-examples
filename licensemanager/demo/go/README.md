@@ -11,4 +11,4 @@ go run main.go --service-account-key ./key.json --resource-id resource-1 --folde
 curl -H Metadata-Flavor:Google 169.254.169.254/computeMetadata/v1/instance/?recursive=true | jq '{id: .id, folderId: .vendor.folderId}'
 ```
 
-А также если, параметры не указать, то демо приложение попробует получить их из метаданных виртуальной машины.
+Если не указать параметры, демо-приложение попробует получить их из метаданных виртуальной машины.
