@@ -1,0 +1,28 @@
+{% extends "base.jinja" %}
+{% block content %}
+    <div class="container py-3">
+    <header>
+        <div class="d-flex flex-column flex-md-row align-items-center pb-3 mb-4 border-bottom">
+            <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
+                <span class="fs-4">SaaS Demo</span>
+            </a>
+
+            <nav class="d-inline-flex mt-2 mt-md-0 ms-md-auto">
+                <span class="me-3 py-2 text-dark">{{ user.login }}</span>
+                <a class="me-3 py-2 text-dark" href="/logout">Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
+            <form action="/report" method="post">
+                <label for="amount" class="form-label">Amount</label>
+                <input name="amount">
+                <button type="submit" class="w-100 btn btn-lg btn-outline-primary">Send</button>
+            </form>
+        </div>
+
+
+    </main>
+{% endblock %}
