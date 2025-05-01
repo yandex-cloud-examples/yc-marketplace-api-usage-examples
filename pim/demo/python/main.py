@@ -23,6 +23,9 @@ log.addHandler(logging.StreamHandler(stream=sys.stdout))
 @app.route('/')
 def index():
     log.info(session.get('login', None))
+    user = handlers.get_user()
+    if user.product_instance_id is not None:
+        return render_template('app.jinja', user=user)
     return render_template('index.jinja', token=request.args.get('token'))
 
 
@@ -66,6 +69,11 @@ def logout():
 @app.route('/bind', methods=['POST'])
 def bind_post():
     handlers.bind(session['login'], token=request.args.get('token'))
+    return redirect('/')
+
+@app.route('/report', methods=['POST'])
+def report_post():
+    handlers.emulate_work(int(request.form.get('amount', 1)))
     return redirect('/')
 
 if __name__ == "__main__":
