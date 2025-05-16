@@ -24,7 +24,7 @@ log.addHandler(logging.StreamHandler(stream=sys.stdout))
 def index():
     log.info(session.get('login', None))
     user = handlers.get_user()
-    if user.product_instance_id is not None:
+    if user is not None and user.product_instance_id is not None:
         return render_template('app.jinja', user=user)
     return render_template('index.jinja', token=request.args.get('token'))
 

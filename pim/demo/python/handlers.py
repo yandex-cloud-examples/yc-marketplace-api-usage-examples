@@ -74,8 +74,8 @@ def emulate_work(amount: int = 1):
 
     metering = sdk().client(ProductUsageServiceStub)
     try:
-
-        res = metering.Write(WriteUsageRequest(
+        # Calling gRPC method this way gives us access to the call object
+        res, call = metering.Write.with_call(WriteUsageRequest(
             dry_run=False,
             product_instance_id=db_user.product_instance_id,
             usage_records=[
@@ -90,7 +90,12 @@ def emulate_work(amount: int = 1):
                 },
             ],
         ))
-        print(res)
+        # It is useful to log the call metadata.
+        # There are `x-request-id` and `x-server-trace-id` headers usefull for reporting to support for debugging
+        # purposes.
+        print(res, {m.key: m.value for m in call._call._state.initial_metadata})
     except Exception as e:
         print("err", e)
+        #  You also can access the metadata from the exception object
+        print({m.key: m.value for m in e.args[0].initial_metadata})
         return "Invalid token"
