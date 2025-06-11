@@ -2,9 +2,15 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
+
+	"demo/pkg/config"
+	"demo/pkg/db"
+	"demo/pkg/handlers"
+	"demo/pkg/logging" // Import the new logging package
+	"demo/pkg/metering"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -12,76 +18,86 @@ import (
 	"github.com/yandex-cloud/go-sdk/iamkey"
 	"github.com/yandex-cloud/go-sdk/pkg/requestid"
 	"google.golang.org/grpc"
-
-	"demo/pkg/db"
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	appCfg, err := config.LoadConfig(logger) // Use config.LoadConfig
+	if err != nil {
+		logger.Error("Failed to load configuration", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
-	repo, err := db.NewRepo()
+	repo, err := db.NewRepo() // NewRepo already uses YDB_CONNECTION_STRING from env
 	if err != nil {
-		log.Fatalf("Could not connect to database: %s\n", err)
+		logger.Error("Could not connect to database", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
+	// It's good practice to close the repo when main exits
+	defer func() {
+		if err := repo.Close(); err != nil {
+			logger.Error("Failed to close database connection", slog.String("error", err.Error()))
+		}
+	}()
 
 	var credentials ycsdk.Credentials
-	saKeyFile := os.Getenv("YC_SA_KEY_FILE")
-	if saKeyFile != "" {
-		fileData, err := os.ReadFile(saKeyFile)
+	if appCfg.ServiceAccountKeyFile != "" {
+		fileData, err := os.ReadFile(appCfg.ServiceAccountKeyFile)
 		if err != nil {
-			log.Fatalf("Could not read service account key file: %s\n", err)
-			return
+			logger.Error("Could not read service account key file", slog.String("error", err.Error()), slog.String("file", appCfg.ServiceAccountKeyFile))
+			os.Exit(1)
 		}
 		var saKey iamkey.Key
 		if err := saKey.UnmarshalJSON(fileData); err != nil {
-			log.Fatalf("Could not unmarshal service account key: %s\n", err)
-			return
+			logger.Error("Could not unmarshal service account key", slog.String("error", err.Error()))
+			os.Exit(1)
 		}
 		credentials, err = ycsdk.ServiceAccountKey(&saKey)
 		if err != nil {
-			log.Fatalf("Could not create service account credentials: %s\n", err)
-			return
+			logger.Error("Could not create service account credentials from key", slog.String("error", err.Error()))
+			os.Exit(1)
 		}
+		logger.Info("Using service account key file credentials", slog.String("file", appCfg.ServiceAccountKeyFile))
 	} else {
 		credentials = ycsdk.InstanceServiceAccount()
-		log.Println("Using instance service account credentials")
+		logger.Info("Using instance service account credentials (YC_SA_KEY_FILE not set)")
 	}
 
-	cfg := ycsdk.Config{
+	sdkConfig := ycsdk.Config{
 		Credentials: credentials,
 	}
 	ctx := context.Background()
 	sdk, err := ycsdk.Build(
 		ctx,
-		cfg,
-		grpc.WithUnaryInterceptor(requestid.Interceptor()),
+		sdkConfig,
+		grpc.WithUnaryInterceptor(requestid.Interceptor()), // Use ycsdk requestid interceptor
 	)
 	if err != nil {
-		log.Fatal("SDK init error: " + err.Error())
+		logger.Error("SDK init error", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
-	s := NewServer(repo, sdk)
+	meteringClient := metering.NewClient(sdk, logger, appCfg.DefaultSkuID)
+	s := handlers.NewServer(repo, sdk, logger, meteringClient)
+
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Get("/register", s.registerHandler)
-	r.Post("/register", s.registerPostHandler)
+	r.Use(middleware.RequestID)              // This sets the request ID in the context for HTTP
+	r.Use(logging.LoggingMiddleware(logger)) // Use LoggingMiddleware from the logging package
+	r.Use(middleware.Recoverer)
 
-	r.Get("/login", s.loginHandler)
-	r.Post("/login", s.loginPostHandler)
+	r.Get("/register", s.RegisterGetHandler)
+	r.Post("/register", s.RegisterPostHandler)
+	r.Get("/login", s.LoginGetHandler)
+	r.Post("/login", s.LoginPostHandler)
+	r.Get("/logout", s.LogoutGetHandler)
+	r.Post("/bind", s.BindPostHandler)
+	r.Post("/report", s.ReportPostHandler)
+	r.Get("/", s.IndexGetHandler)
 
-	r.Get("/logout", s.logoutHandler)
-
-	r.Post("/bind", s.bindPostHandler)
-
-	r.Post("/report", s.reportPostHandler)
-
-	r.Get("/", s.indexHandler)
-
-	log.Printf("Server starting on port %s\n", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatalf("Could not start server: %s\n", err)
+	logger.Info("Server starting", slog.String("port", appCfg.Port))
+	if err := http.ListenAndServe(":"+appCfg.Port, r); err != nil {
+		logger.Error("Could not start server", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 }
