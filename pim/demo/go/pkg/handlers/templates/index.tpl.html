@@ -48,7 +48,11 @@
                         </ul>
                         {{ if .user }}
                           {{ if .token }}
-                        <button type="button" class="w-100 btn btn-lg btn-outline-primary">Get started</button>
+                            <form method="post" action="/bind?token={{ .token }}">
+                                <button type="submit"
+                                class="w-100 btn btn-lg btn-outline-primary">Bind accounts
+                                </button>
+                            </form>
                           {{end}}
                         {{ else }}
                         <a href="/login{{if .token}}?token={{.token}}{{end}}" type="button" class="w-100 btn btn-lg btn-outline-primary">Sign up for free</a>
